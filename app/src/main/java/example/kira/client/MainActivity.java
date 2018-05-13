@@ -25,7 +25,7 @@ public class MainActivity extends AppCompatActivity {
     String line;
     String msgout;
     Thread handleServer;
-    public static final int SERVERPORT = 1201;
+    public static final int SERVERPORT = 4001;
     public static final String SERVERIP = "10.0.2.2";
 
     @Override
@@ -37,7 +37,7 @@ public class MainActivity extends AppCompatActivity {
         etInput = findViewById(R.id.etInput);
         tvMsgArea = findViewById(R.id.tvMsgArea);
         btnSend = findViewById(R.id.btnSend);
-        tvMsgArea.setText("");
+        tvMsgArea.setText("Server is not found, please start server first then restart client app...\n");
 
 
         this.ConnectionThread = new Thread(new ConnectionThread());
@@ -54,17 +54,18 @@ public class MainActivity extends AppCompatActivity {
                     public void run() {
                         try {
 
-                                msgout = "Client: " + etInput.getText().toString().trim() + "\n";
-                                runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        tvMsgArea.setText(tvMsgArea.getText().toString().trim() + "\n" + msgout);
-                                    }
-                                });
+                            msgout = "Client: " + etInput.getText().toString().trim() + "\n";
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    etInput.setText("");
+                                    tvMsgArea.setText(tvMsgArea.getText().toString().trim() + "\n" + msgout);
+                                }
+                            });
 
-                                OutputStream outputStream = socket.getOutputStream();
+                            OutputStream outputStream = socket.getOutputStream();
 
-                                outputStream.write(msgout.getBytes());
+                            outputStream.write(msgout.getBytes());
 
 
                         } catch (Exception e) {
@@ -110,31 +111,49 @@ public class MainActivity extends AppCompatActivity {
                 e.printStackTrace();
             }
 
+
         }
 
         public void run() {
 
 //            while (!Thread.currentThread().isInterrupted()) {
 
-                try {
+            try {
 
-                    while ((line = serverMsg.readLine()) != null) {
-                        if ("quit".equalsIgnoreCase(line)) {
-                            break;
-                        }
+                while ((line = serverMsg.readLine()) != null) {
+                    if(tvMsgArea.getText().toString().trim().contains("Server is not found, please start server first then restart client app...")){
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                tvMsgArea.setText(tvMsgArea.getText().toString() +  line + "\n");
+                                tvMsgArea.setText("");
+                            }
+                        });
+                    }
+                    if ("quit".equalsIgnoreCase(line)) {
+                        break;
+                    }
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            tvMsgArea.setText(tvMsgArea.getText().toString() +  line + "\n");
+                        }
+                    });
+
+                    if(!socket.isConnected()) {
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                tvMsgArea.setText(tvMsgArea.getText().toString().trim() + "\nYou are disconnected, please start the server then restart the client...");
                             }
                         });
 
-
+                        break;
                     }
-
-                } catch (IOException e) {
-                    e.printStackTrace();
                 }
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
 
 //            }
 
